@@ -2,19 +2,32 @@ const express=require('express')
 const {Certification,Project,Experience,Feedback} = require('./connect');
 const cors = require('cors');
 const path = require("path");
-const zlib = require('zlib');
-
-require('dotenv').config({ path: './.env' });
 const axios = require('axios');
+
 
 const app=express()
 const port = 4000
   
 app.use(express.json());
-app.use(cors())
 
-const {HUGGING_FACE_API}=process.env
-const {CHAT_API_KEY}=process.env
+const HUGGING_FACE_API=process.env.HUGGING_FACE_API
+const CHAT_API_KEY=process.env.CHAT_API_KEY
+
+
+app.use(cors({
+  origin:['https://portfolio-frontend-iota-three.vercel.app'],
+  methods:['POST','GET'],
+  credentials:true
+}))
+
+
+
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*'); // You can replace '*' with your frontend domain if needed
+  res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  next();
+});
 
 app.get("/",(req,res)=>{
   res.send("Server is running")
@@ -53,24 +66,17 @@ app.get('/certifications', async (req, res) => {
 
   app.get('/data',async (req,res)=>{
     try{
-      const [certifications,projects,experience,feedbacks] = await Promise.all([
+      const [certifications,projects,feedbacks] = await Promise.all([
         Certification.find(),
         Project.find(),
-        Experience.find(),
         Feedback.find()
       ])
       const combinedData = {
         certifications,
         projects,
-        experience,
         feedbacks
       };
-      const json = JSON.stringify(combinedData);
-      const compressedData = zlib.gzipSync(json);
-  
-      res.setHeader('Content-Encoding', 'gzip');
-  
-      res.status(200).send(compressedData);
+      res.status(200).json(combinedData);
     }catch(e){
       res.status(500).send('Internal Server Error');
     }
