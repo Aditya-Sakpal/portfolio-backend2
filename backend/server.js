@@ -4,12 +4,13 @@ const cors = require('cors');
 const path = require("path");
 const axios = require('axios');
 const zlib = require('zlib');
+const compression = require('compression')
 
 const app=express()
 const port = 4000
   
 app.use(express.json());
-
+app.use(compression())
 const HUGGING_FACE_API=process.env.HUGGING_FACE_API
 const CHAT_API_KEY=process.env.CHAT_API_KEY
 
@@ -72,18 +73,7 @@ app.get('/certifications', async (req, res) => {
         Experience.find(),
         Feedback.find()
       ])
-      const combinedData = {
-        certifications,
-        projects,
-        experience,
-        feedbacks
-      };
-      const json = JSON.stringify(combinedData);
-      const compressedData = zlib.gzipSync(json);
-  
-      res.setHeader('Content-Encoding', 'gzip');
-  
-      res.status(200).send(compressedData);
+      res.status(200).send(zlib.gzipSync(JSON.stringify({certifications,projects,experience,feedbacks})))
     }catch(e){
       res.status(500).send('Internal Server Error');
     }
