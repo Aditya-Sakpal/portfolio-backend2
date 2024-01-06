@@ -3,7 +3,7 @@ const {Certification,Project,Experience,Feedback} = require('./connect');
 const cors = require('cors');
 const path = require("path");
 const axios = require('axios');
-
+const zlib = require('zlib');
 
 const app=express()
 const port = 4000
@@ -66,17 +66,24 @@ app.get('/certifications', async (req, res) => {
 
   app.get('/data',async (req,res)=>{
     try{
-      const [certifications,projects,feedbacks] = await Promise.all([
+      const [certifications,projects,experience,feedbacks] = await Promise.all([
         Certification.find(),
         Project.find(),
+        Experience.find(),
         Feedback.find()
       ])
       const combinedData = {
         certifications,
         projects,
+        experience,
         feedbacks
       };
-      res.status(200).json(combinedData);
+      const json = JSON.stringify(combinedData);
+      const compressedData = zlib.gzipSync(json);
+  
+      res.setHeader('Content-Encoding', 'gzip');
+  
+      res.status(200).send(compressedData);
     }catch(e){
       res.status(500).send('Internal Server Error');
     }
